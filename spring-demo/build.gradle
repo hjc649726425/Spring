@@ -1,0 +1,55 @@
+plugins {
+    id 'java'
+}
+
+group 'org.springframework'
+version '5.1.20.BUILD-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    optional(project(":spring-context"))
+    optional(project(":spring-webmvc"))
+    optional("org.apache.tomcat.embed:tomcat-embed-core:9.0.29")
+
+    // https://mvnrepository.com/artifact/commons-io/commons-io
+    implementation group: 'commons-io', name: 'commons-io', version: '2.8.0'
+
+    // https://mvnrepository.com/artifact/commons-fileupload/commons-fileupload
+    implementation group: 'commons-fileupload', name: 'commons-fileupload', version: '1.4'
+
+    // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.2'
+
+    // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.12.2'
+
+    // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-annotations
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.12.2'
+
+    optional(project(":spring-aop"))
+    optional(project(":spring-beans"))
+    optional(project(":spring-context"))
+    optional(project(":spring-core"))
+    optional(project(":spring-expression"))
+    optional(project(":spring-jdbc"))
+    optional(project(":spring-orm"))
+    optional(project(":spring-test"))
+    optional(project(":spring-tx"))
+    optional(project(":spring-web"))
+    optional("javax.inject:javax.inject:1")
+    optional("javax.resource:javax.resource-api:1.7.1")
+    optional("javax.servlet:javax.servlet-api:3.1.0")
+    optional("org.aspectj:aspectjweaver:${aspectjVersion}")
+    optional("org.hsqldb:hsqldb:${hsqldbVersion}")
+    optional("org.hibernate:hibernate-core:5.1.17.Final")
+
+    optional 'mysql:mysql-connector-java:8.0.15'
+    optional 'org.mybatis:mybatis-spring:1.3.1'
+    optional 'org.mybatis:mybatis:3.4.1'
+    optional 'org.springframework:spring-jdbc:4.3.5.RELEASE'
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
