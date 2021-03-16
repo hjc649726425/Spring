@@ -26,16 +26,16 @@ public class TestAspect {
 
 	@Around("test()")
 	public Object round(ProceedingJoinPoint point){
+		Object ret = null;
 		try {
 			System.out.println("before");
-			Object o = point.proceed();
-			o = new Integer(2);
+			ret = point.proceed();
 			System.out.println("after");
 		} catch (Throwable throwable) {
 			throwable.printStackTrace();
 		}
 
-		return "login124";
+		return ret;
 	}
 
 	@Around("test2()")

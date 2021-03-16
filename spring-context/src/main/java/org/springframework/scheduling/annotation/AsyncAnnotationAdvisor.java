@@ -53,10 +53,14 @@ import org.springframework.util.function.SingletonSupplier;
  * @see AnnotationAsyncExecutionInterceptor
  */
 @SuppressWarnings("serial")
+//相当于一个切面 ，包含了切入点pointcut和增强advice
 public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements BeanFactoryAware {
 
+	//通知，查看buildAdvice，使用AnnotationAsyncExecutionInterceptor，用于拦截添加Async注解的方法
+	//放到线程池中执行
 	private Advice advice;
 
+	//切入点，查看buildPointcut，返回一个复合切入点ComposablePointcut 包含类和方法的切入点
 	private Pointcut pointcut;
 
 
@@ -76,6 +80,8 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 	 * @see AnnotationAsyncExecutionInterceptor#getDefaultExecutor(BeanFactory)
 	 */
 	@SuppressWarnings("unchecked")
+	// 创建一个AsyncAnnotationAdvisor实例，
+	// 可以自己指定Executor 和 AsyncUncaughtExceptionHandler
 	public AsyncAnnotationAdvisor(
 			@Nullable Executor executor, @Nullable AsyncUncaughtExceptionHandler exceptionHandler) {
 
@@ -95,6 +101,7 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 	public AsyncAnnotationAdvisor(
 			@Nullable Supplier<Executor> executor, @Nullable Supplier<AsyncUncaughtExceptionHandler> exceptionHandler) {
 
+		// 这里List长度选择2，应为绝大部分情况下只会支持这两种@Async和@Asynchronous
 		Set<Class<? extends Annotation>> asyncAnnotationTypes = new LinkedHashSet<>(2);
 		asyncAnnotationTypes.add(Async.class);
 		try {
@@ -104,7 +111,9 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 		catch (ClassNotFoundException ex) {
 			// If EJB 3.1 API not present, simply ignore.
 		}
+		//构建增强，参数是一个执行器，和异常处理类。
 		this.advice = buildAdvice(executor, exceptionHandler);
+		//构建切入点
 		this.pointcut = buildPointcut(asyncAnnotationTypes);
 	}
 
@@ -118,6 +127,7 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 	 * be executed asynchronously.
 	 * @param asyncAnnotationType the desired annotation type
 	 */
+	// 这里注意：如果你自己指定了注解类型。那么将不再扫描其余两个默认的注解，因此pointcut也就需要重新构建了
 	public void setAsyncAnnotationType(Class<? extends Annotation> asyncAnnotationType) {
 		Assert.notNull(asyncAnnotationType, "'asyncAnnotationType' must not be null");
 		Set<Class<? extends Annotation>> asyncAnnotationTypes = new HashSet<>();
@@ -128,6 +138,7 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 	/**
 	 * Set the {@code BeanFactory} to be used when looking up executors by qualifier.
 	 */
+	// 如果这个advice也实现了BeanFactoryAware，那就也把BeanFactory放进去
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		if (this.advice instanceof BeanFactoryAware) {
@@ -147,6 +158,7 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 	}
 
 
+	// 这个最终又是委托给`AnnotationAsyncExecutionInterceptor`，它是一个具体的增强器，有着核心内容
 	protected Advice buildAdvice(
 			@Nullable Supplier<Executor> executor, @Nullable Supplier<AsyncUncaughtExceptionHandler> exceptionHandler) {
 
@@ -161,8 +173,12 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 	 * @return the applicable Pointcut object, or {@code null} if none
 	 */
 	protected Pointcut buildPointcut(Set<Class<? extends Annotation>> asyncAnnotationTypes) {
+		// 采用一个组合切面：ComposablePointcut （因为可能需要支持多个注解嘛）
 		ComposablePointcut result = null;
 		for (Class<? extends Annotation> asyncAnnotationType : asyncAnnotationTypes) {
+			// 这里为何new出来两个AnnotationMatchingPointcut？
+			// 第一个：类匹配（只需要类上面有这个注解，所有的方法都匹配）this.methodMatcher = MethodMatcher.TRUE;
+			// 第二个：方法匹配。所有的类都可以。但是只有方法上有这个注解才会匹配上
 			Pointcut cpc = new AnnotationMatchingPointcut(asyncAnnotationType, true);
 			Pointcut mpc = new AnnotationMatchingPointcut(null, asyncAnnotationType, true);
 			if (result == null) {
@@ -171,8 +187,10 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 			else {
 				result.union(cpc);
 			}
+			// 最终的结果都是取值为并集的
 			result = result.union(mpc);
 		}
+		// 啥类型都木有的情况下，是匹配所有类的所有方法
 		return (result != null ? result : Pointcut.TRUE);
 	}
 

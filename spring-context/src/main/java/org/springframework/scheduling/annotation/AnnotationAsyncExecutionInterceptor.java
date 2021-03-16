@@ -37,6 +37,7 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.scheduling.annotation.Async
  * @see org.springframework.scheduling.annotation.AsyncAnnotationAdvisor
  */
+// 它继承自AsyncExecutionInterceptor ，只复写了一个方法
 public class AnnotationAsyncExecutionInterceptor extends AsyncExecutionInterceptor {
 
 	/**
@@ -75,15 +76,20 @@ public class AnnotationAsyncExecutionInterceptor extends AsyncExecutionIntercept
 	 * {@linkplain #setExecutor(Executor) default executor} should be used
 	 * @see #determineAsyncExecutor(Method)
 	 */
+	// 由此可以见它就是去拿到@Async的value值。以方法的为准，其次是类上面的
+	// 备注：发现这里是不支持EJB的@Asynchronous注解的，它是不能指定执行器的
 	@Override
 	@Nullable
 	protected String getExecutorQualifier(Method method) {
 		// Maintainer's note: changes made here should also be made in
 		// AnnotationAsyncExecutionAspect#getExecutorQualifier
+		//获取方法上的注解
 		Async async = AnnotatedElementUtils.findMergedAnnotation(method, Async.class);
 		if (async == null) {
+			//获取类上的注解
 			async = AnnotatedElementUtils.findMergedAnnotation(method.getDeclaringClass(), Async.class);
 		}
+		//返回@Aysnc注解中指定的value值
 		return (async != null ? async.value() : null);
 	}
 

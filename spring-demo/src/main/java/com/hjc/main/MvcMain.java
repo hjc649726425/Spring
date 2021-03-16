@@ -5,6 +5,8 @@ import com.hjc.event.MyApplicationEvent;
 import com.hjc.process.mvc.MyWebApplicationContext;
 import com.hjc.service.IUserService;
 
+import java.util.concurrent.Future;
+
 public class MvcMain {
 
 	/**
@@ -49,8 +51,8 @@ public class MvcMain {
 		webApplicationContext.publishEvent(new MyApplicationEvent(Thread.currentThread().getName() + " | 自定义事件 ..."));
 
 		IUserService userService = (IUserService) webApplicationContext.getBean("userService");
-		String s = userService.login();
-		System.out.println(s);
+		Future<String> login = userService.login();
+		System.out.println(login.get());
 		System.out.println(userService.getClass());
 	}
 }

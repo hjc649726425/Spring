@@ -13,6 +13,7 @@ import org.springframework.context.annotation.*;
 
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
@@ -33,6 +34,8 @@ import javax.sql.DataSource;
 @EnableAspectJAutoProxy(proxyTargetClass = false, exposeProxy = false)
 @EnableTransactionManagement(proxyTargetClass = false, mode = AdviceMode.PROXY) //开启事务
 @MapperScan("com.hjc.dao")
+//开启异步化支持
+@EnableAsync
 public class Appconfig {
 
 	private String driverClass = "com.mysql.cj.jdbc.Driver";

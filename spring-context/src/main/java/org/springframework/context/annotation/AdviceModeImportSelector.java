@@ -38,6 +38,7 @@ public abstract class AdviceModeImportSelector<A extends Annotation> implements 
 	/**
 	 * The default advice mode attribute name.
 	 */
+	// 默认都叫mode
 	public static final String DEFAULT_ADVICE_MODE_ATTRIBUTE_NAME = "mode";
 
 
@@ -46,6 +47,7 @@ public abstract class AdviceModeImportSelector<A extends Annotation> implements 
 	 * generic type {@code A}. The default is {@value #DEFAULT_ADVICE_MODE_ATTRIBUTE_NAME},
 	 * but subclasses may override in order to customize.
 	 */
+	// 显然也允许子类覆盖此方法
 	protected String getAdviceModeAttributeName() {
 		return DEFAULT_ADVICE_MODE_ATTRIBUTE_NAME;
 	}
@@ -62,11 +64,14 @@ public abstract class AdviceModeImportSelector<A extends Annotation> implements 
 	 * on the importing {@code @Configuration} class or if {@link #selectImports(AdviceMode)}
 	 * returns {@code null}
 	 */
+	// importingClassMetadata：注解的信息
 	@Override
 	public final String[] selectImports(AnnotationMetadata importingClassMetadata) {
+		// 这里泛型，拿到泛型类型
 		Class<?> annType = GenericTypeResolver.resolveTypeArgument(getClass(), AdviceModeImportSelector.class);
 		Assert.state(annType != null, "Unresolvable type argument for AdviceModeImportSelector");
 
+		// 根据类型，拿到该类型的这个注解，然后转换为AnnotationAttributes
 		AnnotationAttributes attributes = AnnotationConfigUtils.attributesFor(importingClassMetadata, annType);
 		if (attributes == null) {
 			throw new IllegalArgumentException(String.format(
@@ -75,6 +80,7 @@ public abstract class AdviceModeImportSelector<A extends Annotation> implements 
 		}
 
 		AdviceMode adviceMode = attributes.getEnum(getAdviceModeAttributeName());
+		// 拿到AdviceMode，最终交给子类，让她自己去实现  决定导入哪个Bean
 		String[] imports = selectImports(adviceMode);
 		if (imports == null) {
 			throw new IllegalArgumentException("Unknown AdviceMode: " + adviceMode);
@@ -92,6 +98,7 @@ public abstract class AdviceModeImportSelector<A extends Annotation> implements 
 	 * @return array containing classes to import (empty array if none;
 	 * {@code null} if the given {@code AdviceMode} is unknown)
 	 */
+	// 子类去实现  具体导入哪个Bean
 	@Nullable
 	protected abstract String[] selectImports(AdviceMode adviceMode);
 

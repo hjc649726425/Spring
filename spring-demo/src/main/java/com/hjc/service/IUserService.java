@@ -1,8 +1,10 @@
 package com.hjc.service;
 
+import java.util.concurrent.Future;
+
 public interface IUserService {
 
-	public String login();
+	public Future<String> login();
 }
 
 

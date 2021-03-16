@@ -65,6 +65,11 @@ public @interface Async {
 	 * of {@code Async#value} always overrides any value set at the class level.
 	 * @since 3.1.2
 	 */
+	/**
+	 * 可以指定一个执行器Executor 或者Spring的TaskExecutor
+	 * 如果不指定，日志中会提示.s.a.AnnotationAsyncExecutionInterceptor : No TaskExecutor bean found for async processing ，
+	 * 会使用默认执行器为SimpleAsyncTaskExecutor
+	 */
 	String value() default "";
 
 }

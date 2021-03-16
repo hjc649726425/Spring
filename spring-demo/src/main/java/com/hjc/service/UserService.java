@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.concurrent.Future;
 
 @Service
 //@Scope("prototype")
@@ -73,10 +76,12 @@ public class UserService implements IUserService, InitializingBean, DisposableBe
 	}
 
 	@Transactional(propagation= Propagation.REQUIRED,isolation = Isolation.DEFAULT)
+	@Async
 	@Override
-	public String login() {
+	public Future<String> login() {
 		System.out.println("login test:" + testService.value);
-		return "login";
+		System.out.println("login thradname : " + Thread.currentThread().getName());
+		return new AsyncResult<>("login");
 	}
 
 	@Override

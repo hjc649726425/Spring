@@ -40,10 +40,13 @@ import org.springframework.lang.Nullable;
 public abstract class AbstractBeanFactoryAwareAdvisingPostProcessor extends AbstractAdvisingBeanPostProcessor
 		implements BeanFactoryAware {
 
+	// Bean工厂
 	@Nullable
 	private ConfigurableListableBeanFactory beanFactory;
 
 
+	// 如果这个Bean工厂不是ConfigurableListableBeanFactory ，那就set一个null
+	// 我们的`DefaultListableBeanFactory`显然就是它的子类
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		this.beanFactory = (beanFactory instanceof ConfigurableListableBeanFactory ?
@@ -52,11 +55,15 @@ public abstract class AbstractBeanFactoryAwareAdvisingPostProcessor extends Abst
 
 	@Override
 	protected ProxyFactory prepareProxyFactory(Object bean, String beanName) {
+		// 如果Bean工厂是正常的，那就把这个Bean 暴露为一个特殊的Bean，记录下它的类型
 		if (this.beanFactory != null) {
 			AutoProxyUtils.exposeTargetClass(this.beanFactory, beanName, bean.getClass());
 		}
 
 		ProxyFactory proxyFactory = super.prepareProxyFactory(bean, beanName);
+		// 这里创建代理也是和`AbstractAutoProxyCreator`差不多的逻辑。
+		// 如果没有显示的设置为CGLIB，并且toProxyUtils.shouldProxyTargetClass还被暴露过时一个特殊的Bean，那就强制使用CGLIB代理吧
+		// 这里一般和Scope无关的话，都返回false了
 		if (!proxyFactory.isProxyTargetClass() && this.beanFactory != null &&
 				AutoProxyUtils.shouldProxyTargetClass(this.beanFactory, beanName)) {
 			proxyFactory.setProxyTargetClass(true);

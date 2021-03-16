@@ -39,6 +39,7 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 
 	protected boolean beforeExistingAdvisors = false;
 
+	// 缓存合格的Bean们
 	private final Map<Class<?>, Boolean> eligibleBeans = new ConcurrentHashMap<>(256);
 
 
@@ -51,48 +52,66 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 	 * <p>Note: Check the concrete post-processor's javadoc whether it possibly
 	 * changes this flag by default, depending on the nature of its advisor.
 	 */
+	// 当遇到一个pre-object的时候，是否把该processor所持有得advisor放在现有的增强器们之前执行
+	// 默认是false，会放在最后一个位置上的
 	public void setBeforeExistingAdvisors(boolean beforeExistingAdvisors) {
 		this.beforeExistingAdvisors = beforeExistingAdvisors;
 	}
 
 
+	// 不处理
 	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName) {
 		return bean;
 	}
 
+	// Bean已经实例化、初始化完成之后执行。
 	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName) {
+		// 忽略AopInfrastructureBean的Bean，并且如果没有advisor也会忽略不处理
 		if (this.advisor == null || bean instanceof AopInfrastructureBean) {
 			// Ignore AOP infrastructure such as scoped proxies.
 			return bean;
 		}
 
+		// 如果这个Bean已经被代理过了（比如已经被AOP切中了），那本处就无需再重复创建代理了嘛
+		// 直接向里面添加advisor就成了
 		if (bean instanceof Advised) {
 			Advised advised = (Advised) bean;
+			// 注意此advised不能是已经被冻结了的。且源对象必须是Eligible合格的
 			if (!advised.isFrozen() && isEligible(AopUtils.getTargetClass(bean))) {
 				// Add our local Advisor to the existing proxy's Advisor chain...
+				// 把自己持有的这个advisor放在首位（如果beforeExistingAdvisors=true）
 				if (this.beforeExistingAdvisors) {
 					advised.addAdvisor(0, this.advisor);
 				}
+				// 否则就是尾部位置
 				else {
 					advised.addAdvisor(this.advisor);
 				}
+				// 最终直接返回即可，因为已经没有必要再创建一次代理对象了
 				return bean;
 			}
 		}
 
+		// 如果这个Bean事合格的，这个时候是没有被代理过的
 		if (isEligible(bean, beanName)) {
+			// 以当前的配置，创建一个ProxyFactory
 			ProxyFactory proxyFactory = prepareProxyFactory(bean, beanName);
+			// 如果不是使用CGLIB常见代理，那就去分析出它所实现的接口们  然后放进ProxyFactory 里去
 			if (!proxyFactory.isProxyTargetClass()) {
 				evaluateProxyInterfaces(bean.getClass(), proxyFactory);
 			}
+			// 切面就是当前持有得advisor
 			proxyFactory.addAdvisor(this.advisor);
+			// 留给子类，自己还可以对proxyFactory进行自定义~~~~~
 			customizeProxyFactory(proxyFactory);
+			// 最终返回这个代理对象~~~~~
 			return proxyFactory.getProxy(getProxyClassLoader());
 		}
 
 		// No proxy needed.
+		// （相当于没有做任何的代理处理,返回原对象）
 		return bean;
 	}
 
@@ -111,6 +130,7 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 	 * @param beanName the name of the bean
 	 * @see #isEligible(Class)
 	 */
+	// 检查这个Bean是否是合格的
 	protected boolean isEligible(Object bean, String beanName) {
 		return isEligible(bean.getClass());
 	}
@@ -123,13 +143,16 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 	 * @see AopUtils#canApply(Advisor, Class)
 	 */
 	protected boolean isEligible(Class<?> targetClass) {
+		// 如果已经被缓存着了，那肯定靠谱啊
 		Boolean eligible = this.eligibleBeans.get(targetClass);
 		if (eligible != null) {
 			return eligible;
 		}
+		// 如果没有切面（就相当于没有给配置增强器，那铁定是不合格的）
 		if (this.advisor == null) {
 			return false;
 		}
+		// 这个重要了：看看这个advisor是否能够切入进targetClass这个类，能够切入进取的也是合格的
 		eligible = AopUtils.canApply(this.advisor, targetClass);
 		this.eligibleBeans.put(targetClass, eligible);
 		return eligible;
@@ -149,6 +172,7 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 	 * @since 4.2.3
 	 * @see #customizeProxyFactory
 	 */
+	// 子类可以复写。比如`AbstractBeanFactoryAwareAdvisingPostProcessor`就复写了这个方法
 	protected ProxyFactory prepareProxyFactory(Object bean, String beanName) {
 		ProxyFactory proxyFactory = new ProxyFactory();
 		proxyFactory.copyFrom(this);
@@ -166,6 +190,7 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 	 * @since 4.2.3
 	 * @see #prepareProxyFactory
 	 */
+	// 子类复写
 	protected void customizeProxyFactory(ProxyFactory proxyFactory) {
 	}
 

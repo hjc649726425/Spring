@@ -62,6 +62,7 @@ import org.springframework.util.function.SingletonSupplier;
  * @see ScheduledAnnotationBeanPostProcessor
  */
 @SuppressWarnings("serial")
+// 它继承自，ProxyProcessorSupport，说明它也拥有AOp的通用配置
 public class AsyncAnnotationBeanPostProcessor extends AbstractBeanFactoryAwareAdvisingPostProcessor {
 
 	/**
@@ -71,23 +72,28 @@ public class AsyncAnnotationBeanPostProcessor extends AbstractBeanFactoryAwareAd
 	 * @since 4.2
 	 * @see AnnotationAsyncExecutionInterceptor#DEFAULT_TASK_EXECUTOR_BEAN_NAME
 	 */
+	// 建议换成AsyncExecutionAspectSupport.DEFAULT_TASK_EXECUTOR_BEAN_NAME
+	// 这样语意更加的清晰些
 	public static final String DEFAULT_TASK_EXECUTOR_BEAN_NAME =
 			AnnotationAsyncExecutionInterceptor.DEFAULT_TASK_EXECUTOR_BEAN_NAME;
 
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	// 异步的执行器
 	@Nullable
 	private Supplier<Executor> executor;
 
+	// 异步异常处理器
 	@Nullable
 	private Supplier<AsyncUncaughtExceptionHandler> exceptionHandler;
 
+	// 注解类型
 	@Nullable
 	private Class<? extends Annotation> asyncAnnotationType;
 
 
-
+	// 此处特别注意：这里设置为true，也就是说@Async的Advisor会放在首位
 	public AsyncAnnotationBeanPostProcessor() {
 		setBeforeExistingAdvisors(true);
 	}
@@ -114,6 +120,9 @@ public class AsyncAnnotationBeanPostProcessor extends AbstractBeanFactoryAwareAd
 	 * @see AnnotationAsyncExecutionInterceptor#getDefaultExecutor(BeanFactory)
 	 * @see #DEFAULT_TASK_EXECUTOR_BEAN_NAME
 	 */
+	// 如果没有指定。那就将执行全局得默认查找。在上下文中查找唯一的`TaskExecutor`类型的Bean，
+	// 或者一个名称为`taskExecutor`的Executor
+	// 当然，如果上面途径都没找到。那就会采用一个默认的任务池
 	public void setExecutor(Executor executor) {
 		this.executor = SingletonSupplier.of(executor);
 	}
@@ -136,12 +145,17 @@ public class AsyncAnnotationBeanPostProcessor extends AbstractBeanFactoryAwareAd
 	 * methods of a given class) should be invoked asynchronously.
 	 * @param asyncAnnotationType the desired annotation type
 	 */
+	// 可以设定需要扫描哪些注解类型。默认只扫描@Async以及`javax.ejb.Asynchronous`这个注解
 	public void setAsyncAnnotationType(Class<? extends Annotation> asyncAnnotationType) {
 		Assert.notNull(asyncAnnotationType, "'asyncAnnotationType' must not be null");
 		this.asyncAnnotationType = asyncAnnotationType;
 	}
 
 
+	// 重写了父类的方法。然后下面：自己new了一个AsyncAnnotationAdvisor ，
+	// 传入executor和exceptionHandler
+	// 并且最终this.advisor = advisor
+	// 因此可议看出：AsyncAnnotationAdvisor 才是重点了。它定义了它的匹配情况
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		super.setBeanFactory(beanFactory);
